@@ -3,7 +3,6 @@ import "dotenv/config";
 type CreateClickUpTaskParams = {
     name: string;
     description?: string;
-    status?: string;
     listId: string;
 };
 
@@ -30,47 +29,64 @@ function getClickUpToken(): string {
     return token;
 }
 
+function getHeaders() {
+    return {
+        Authorization: getClickUpToken(),
+        "Content-Type": "application/json",
+        Accept: "application/json",
+    };
+}
+
 export async function createClickUpTask({
     name,
     description,
-    status = "Open",
-    listId
+    listId,
 }: CreateClickUpTaskParams): Promise<ClickUpTaskResponse> {
     if (!listId) {
         throw new Error("ClickUp list ID is required.");
     }
 
-    const response = await fetch(
-        `${CLICKUP_API_URL}/list/${listId}/task`,
-        {
+    const url = `${CLICKUP_API_URL}/list/${listId}/task`;
+
+    let response: Response;
+
+    try {
+        response = await fetch(url, {
             method: "POST",
-            headers: {
-                Authorization: getClickUpToken(),
-                "Content-Type": "application/json"
-            },
+            headers: getHeaders(),
             body: JSON.stringify({
                 name,
                 description,
-                status
-            })
-        }
-    );
+            }),
+        });
+    } catch (error) {
+        console.error("ClickUp connection error:", error);
+
+        throw new Error(
+            "Unable to connect to ClickUp. Please try again later."
+        );
+    }
 
     if (!response.ok) {
         const error = await response.text();
 
+        console.error("ClickUp API error:", {
+            status: response.status,
+            response: error,
+        });
+
         throw new Error(
-            `ClickUp task creation failed: ${error}`
+            `ClickUp task creation failed: ${response.status} ${error}`
         );
     }
 
-    return response.json() as Promise<ClickUpTaskResponse>;
+    return (await response.json()) as ClickUpTaskResponse;
 }
 
 export async function updateClickUpCustomField({
     taskId,
     fieldId,
-    value
+    value,
 }: UpdateCustomFieldParams): Promise<void> {
     if (!taskId) {
         throw new Error("ClickUp task ID is required.");
@@ -80,25 +96,36 @@ export async function updateClickUpCustomField({
         throw new Error("ClickUp custom field ID is required.");
     }
 
-    const response = await fetch(
-        `${CLICKUP_API_URL}/task/${taskId}/field/${fieldId}`,
-        {
+    const url = `${CLICKUP_API_URL}/task/${taskId}/field/${fieldId}`;
+
+    let response: Response;
+
+    try {
+        response = await fetch(url, {
             method: "POST",
-            headers: {
-                Authorization: getClickUpToken(),
-                "Content-Type": "application/json"
-            },
+            headers: getHeaders(),
             body: JSON.stringify({
-                value
-            })
-        }
-    );
+                value,
+            }),
+        });
+    } catch (error) {
+        console.error("ClickUp custom field connection error:", error);
+
+        throw new Error(
+            "Unable to connect to ClickUp while updating the custom field."
+        );
+    }
 
     if (!response.ok) {
         const error = await response.text();
 
+        console.error("ClickUp custom field API error:", {
+            status: response.status,
+            response: error,
+        });
+
         throw new Error(
-            `ClickUp custom field update failed: ${error}`
+            `ClickUp custom field update failed: ${response.status} ${error}`
         );
     }
 }

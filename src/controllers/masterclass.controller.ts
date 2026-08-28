@@ -8,7 +8,7 @@ import type { Booking } from "../types/index.js";
 const ticketPrices: Record<string, number> = {
     "early-bird": 180000,
     standard: 200000,
-    vip: 300000
+    vip: 300000,
 };
 
 export async function createBooking(req: Request, res: Response) {
@@ -24,13 +24,13 @@ export async function createBooking(req: Request, res: Response) {
             masterclass,
             session,
             ticket,
-            learningGoal = ""
+            learningGoal = "",
         } = req.body;
 
         if (!transactionId) {
             return res.status(400).json({
                 success: false,
-                message: "Transaction ID is required."
+                message: "Transaction ID is required.",
             });
         }
 
@@ -42,7 +42,7 @@ export async function createBooking(req: Request, res: Response) {
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid transaction ID."
+                message: "Invalid transaction ID.",
             });
         }
 
@@ -58,14 +58,14 @@ export async function createBooking(req: Request, res: Response) {
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Required booking information is missing."
+                message: "Required booking information is missing.",
             });
         }
 
         if (!Array.isArray(tools)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid tools format."
+                message: "Invalid tools format.",
             });
         }
 
@@ -74,7 +74,7 @@ export async function createBooking(req: Request, res: Response) {
         if (!expectedAmount) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid ticket type."
+                message: "Invalid ticket type.",
             });
         }
 
@@ -83,7 +83,7 @@ export async function createBooking(req: Request, res: Response) {
         if (payment.status !== "success" || !payment.data) {
             return res.status(400).json({
                 success: false,
-                message: "Payment could not be verified."
+                message: "Payment could not be verified.",
             });
         }
 
@@ -92,33 +92,33 @@ export async function createBooking(req: Request, res: Response) {
         if (transaction.status !== "successful") {
             return res.status(400).json({
                 success: false,
-                message: "Payment was not successful."
+                message: "Payment was not successful.",
             });
         }
 
         if (transaction.currency !== "NGN") {
             return res.status(400).json({
                 success: false,
-                message: "Invalid payment currency."
+                message: "Invalid payment currency.",
             });
         }
 
-        if (transaction.amount !== expectedAmount) {
-            return res.status(400).json({
-                success: false,
-                message: "Incorrect payment amount."
-            });
-        }
+        // if (transaction.amount !== expectedAmount) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Incorrect payment amount.",
+        //     });
+        // }
 
-        if (
-            transaction.customer.email.toLowerCase() !==
-            email.trim().toLowerCase()
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Payment email does not match booking email."
-            });
-        }
+        // if (
+        //     transaction.customer.email.toLowerCase() !==
+        //     email.trim().toLowerCase()
+        // ) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Payment email does not match booking email.",
+        //     });
+        // }
 
         const booking: Booking = {
             transactionId: transaction.id,
@@ -132,87 +132,88 @@ export async function createBooking(req: Request, res: Response) {
             session: session.trim(),
             ticket: ticket.trim(),
             amount: expectedAmount,
-            learningGoal: learningGoal.trim()
+            learningGoal: learningGoal.trim(),
         };
 
         const clickUpTask = await createMasterclassBookingTask(booking);
 
-        try {
-            await sendEmail({
-                to: booking.email,
-                subject: "Masterclass Booking Confirmation",
-                html: `
-                    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                        <h2>Booking Confirmed</h2>
+//         try {
+//             await sendEmail({
+//                 to: booking.email,
+//                 subject: "Masterclass Booking Confirmation",
+//                 html: `
+//                     <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+//                         <h2>Booking Confirmed</h2>
 
-                        <p>Hi ${booking.name},</p>
+//                         <p>Hi ${booking.name},</p>
 
-                        <p>
-                            Your payment has been successfully received
-                            and your masterclass booking has been confirmed.
-                        </p>
+//                         <p>
+//                             Your payment has been successfully received
+//                             and your masterclass booking has been confirmed.
+//                         </p>
 
-                        <h3>Booking Details</h3>
+//                         <h3>Booking Details</h3>
 
-                        <p>
-                            <strong>Masterclass:</strong> ${booking.masterclass}<br>
-                            <strong>Session:</strong> ${booking.session}<br>
-                            <strong>Ticket:</strong> ${booking.ticket}<br>
-                            <strong>Amount:</strong> ₦${booking.amount.toLocaleString()}<br>
-                            <strong>Transaction ID:</strong> ${booking.transactionId}
-                        </p>
+//                         <p>
+//                             <strong>Masterclass:</strong> ${booking.masterclass}<br>
+//                             <strong>Session:</strong> ${booking.session}<br>
+//                             <strong>Ticket:</strong> ${booking.ticket}<br>
+//                             <strong>Amount:</strong> ₦${booking.amount.toLocaleString()}<br>
+//                             <strong>Transaction ID:</strong> ${booking.transactionId}
+//                         </p>
 
-                        <p>
-                            Thank you for registering. We look forward to
-                            having you.
-                        </p>
+//                         <p>
+//                             Thank you for registering. We look forward to
+//                             having you.
+//                         </p>
 
-                        <p>
-                            Regards,<br>
-                            Orange VFX
-                        </p>
-                    </div>
-                `,
-                text: `
-Booking Confirmed
+//                         <p>
+//                             Regards,<br>
+//                             Orange VFX
+//                         </p>
+//                     </div>
+//                 `,
+//                 text: `
+// Booking Confirmed
 
-Hi ${booking.name},
+// Hi ${booking.name},
 
-Your payment has been successfully received and your masterclass booking has been confirmed.
+// Your payment has been successfully received and your masterclass booking has been confirmed.
 
-Masterclass: ${booking.masterclass}
-Session: ${booking.session}
-Ticket: ${booking.ticket}
-Amount: ₦${booking.amount.toLocaleString()}
-Transaction ID: ${booking.transactionId}
+// Masterclass: ${booking.masterclass}
+// Session: ${booking.session}
+// Ticket: ${booking.ticket}
+// Amount: ₦${booking.amount.toLocaleString()}
+// Transaction ID: ${booking.transactionId}
 
-Thank you for registering.
+// Thank you for registering.
 
-Regards,
-Orange VFX
-                `
-            });
-        } catch (error) {
-            console.error(
-                "Booking confirmation email failed:",
-                error
-            );
-        }
+// Regards,
+// Orange VFX
+//                 `,
+//             });
+//         } catch (error) {
+//             console.error(
+//                 "Booking confirmation email failed:",
+//                 error
+//             );
+//         }
 
         return res.status(201).json({
             success: true,
             message: "Booking created successfully.",
             data: {
                 transactionId: transaction.id,
-                clickUpTaskId: clickUpTask.id
-            }
+                clickUpTaskId: clickUpTask.id,
+            },
         });
     } catch (error) {
         console.error("Create booking error:", error);
 
         return res.status(500).json({
             success: false,
-            message: "Unable to create booking."
+            message: "Unable to create booking.",
         });
     }
 }
+

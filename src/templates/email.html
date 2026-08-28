@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masterclass Booking Confirmation</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;padding:40px 15px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
+
+                    <tr>
+                        <td style="background:#111111;padding:30px;text-align:center;border-bottom:4px solid #ff4c00;">
+                             <img src="./assets/Orange Seed Initiative Approved Logo.png" alt="" style="height: 70px;">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:40px 35px 20px;">
+                            <div style="text-align:center;margin-bottom:30px;">
+                                <div style="display:inline-block;width:52px;height:52px;line-height:52px;border-radius:50%;background:#fff1eb;color:#ff4c00;font-size:28px;">
+                                    ✓
+                                </div>
+
+                                <h2 style="margin:18px 0 8px;font-size:24px;color:#111111;">
+                                    Booking Confirmed
+                                </h2>
+
+                                <p style="margin:0;color:#666666;font-size:15px;">
+                                    Your payment has been received successfully.
+                                </p>
+                            </div>
+
+                            <p style="font-size:16px;line-height:1.6;margin:0 0 20px;">
+                                Hi <strong>${booking.name}</strong>,
+                            </p>
+
+                            <p style="font-size:15px;line-height:1.7;color:#555555;margin:0 0 25px;">
+                                Thank you for registering for the Orange VFX Masterclass.
+                                Your booking has been confirmed and your payment has been successfully processed.
+                            </p>
+
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e5e5e5;border-radius:8px;margin-bottom:25px;">
+                                <tr>
+                                    <td colspan="2" style="padding:18px 20px;border-bottom:2px solid #ff4c00;">
+                                        <strong style="font-size:16px;color:#111111;">
+                                            Booking Details
+                                        </strong>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding:14px 20px;color:#777777;font-size:14px;width:40%;">
+                                        Masterclass
+                                    </td>
+                                    <td style="padding:14px 20px;font-size:14px;font-weight:600;color:#ff4c00;">
+                                        ${booking.masterclass}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding:14px 20px;color:#777777;font-size:14px;">
+                                        Session
+                                    </td>
+                                    <td style="padding:14px 20px;font-size:14px;">
+                                        ${booking.session}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding:14px 20px;color:#777777;font-size:14px;">
+                                        Ticket
+                                    </td>
+                                    <td style="padding:14px 20px;font-size:14px;">
+                                        ${booking.ticket}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding:14px 20px;color:#777777;font-size:14px;">
+                                        Amount Paid
+                                    </td>
+                                    <td style="padding:14px 20px;font-size:14px;font-weight:700;color:#ff4c00;">
+                                        ₦${booking.amount.toLocaleString()}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding:14px 20px;color:#777777;font-size:14px;">
+                                        Transaction ID
+                                    </td>
+                                    <td style="padding:14px 20px;font-size:13px;word-break:break-all;">
+                                        ${booking.transactionId}
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div style="background:#fff7f3;border-left:4px solid #ff4c00;border-radius:8px;padding:20px;margin-bottom:25px;">
+                                <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#111111;">
+                                    What's next?
+                                </p>
+
+                                <p style="margin:0;color:#666666;font-size:14px;line-height:1.7;">
+                                    Please keep this email for your records. Additional information
+                                    about the masterclass, including access details and any necessary
+                                    instructions, will be communicated to you.
+                                </p>
+                            </div>
+
+                            <p style="font-size:15px;line-height:1.7;color:#555555;margin:0;">
+                                We look forward to having you with us.
+                            </p>
+
+                            <p style="font-size:15px;line-height:1.7;margin:25px 0 0;">
+                                Regards,<br>
+                                <strong style="color:#ff4c00;">Richard Oboh</strong>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="background:#111111;padding:25px 35px;text-align:center;border-top:3px solid #ff4c00;">
+                         
+
+                            <p style="margin:0;color:#999999;font-size:12px;line-height:1.6;">
+                                This is an automated confirmation email. Please do not reply directly to this message.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+```

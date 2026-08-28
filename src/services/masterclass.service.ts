@@ -1,54 +1,69 @@
 import "dotenv/config";
 import type { Booking } from "../types/index.js";
 import {
-    createClickUpTask,
-    updateClickUpCustomField
+  createClickUpTask,
+  updateClickUpCustomField,
 } from "./clickup.service.js";
 
+function getRequiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is not configured.`);
+  }
+  return value;
+}
+
 export async function createMasterclassBookingTask(booking: Booking) {
-    const listId = process.env.CLICKUP_BOOKING_LIST_ID;
+  const listId = getRequiredEnv("CLICKUP_MASTERCLASS_LIST_ID");
+  const emailFieldId = getRequiredEnv("MASTERCLASS_EMAIL_FIELD_ID");
+  const phoneFieldId = getRequiredEnv("MASTERCLASS_PHONE_FIELD_ID");
+  const masterclassFieldId = getRequiredEnv("MASTERCLASS_FIELD_ID");
 
-    if (!listId) {
-        throw new Error("CLICKUP_BOOKING_LIST_ID is not configured.");
-    }
 
-    const task = await createClickUpTask({
-        listId,
-        name: `Masterclass Booking - ${booking.name}`
-    });
+  const description = `
+                ## Professional Information
 
-    const fields: Array<[string | undefined, unknown]> = [
-        [process.env.CLICKUP_FIELD_NAME, booking.name],
-        [process.env.CLICKUP_FIELD_EMAIL, booking.email],
-        [process.env.CLICKUP_FIELD_PHONE, booking.phone],
-        [process.env.CLICKUP_FIELD_PROFILE, booking.profile],
-        [process.env.CLICKUP_FIELD_EXPERIENCE, booking.experience],
-        [process.env.CLICKUP_FIELD_TOOLS, booking.tools.join(", ")],
-        [process.env.CLICKUP_FIELD_MASTERCLASS, booking.masterclass],
-        [process.env.CLICKUP_FIELD_SESSION, booking.session],
-        [process.env.CLICKUP_FIELD_TICKET, booking.ticket],
-        [process.env.CLICKUP_FIELD_AMOUNT, booking.amount],
-        [process.env.CLICKUP_FIELD_LEARNING_GOAL, booking.learningGoal],
-        [
-            process.env.CLICKUP_FIELD_TRANSACTION_ID,
-            String(booking.transactionId)
-        ]
-    ];
+                **Profile:** ${booking.profile}
+                **Experience:** ${booking.experience}
+                **Tools:** ${booking.tools.join(", ") || "None"}
 
-    await Promise.all(
-        fields
-            .filter(
-                (field): field is [string, unknown] =>
-                    Boolean(field[0])
-            )
-            .map(([fieldId, value]) =>
-                updateClickUpCustomField({
-                    taskId: task.id,
-                    fieldId,
-                    value
-                })
-            )
-    );
+                ## Masterclass
 
-    return task;
+                **Start Date:** ${booking.session}
+                **Ticket:** ${booking.ticket}
+                **Amount:** ₦${booking.amount.toLocaleString()}
+
+                ## Learning Goal
+
+                ${booking.learningGoal || "Not provided"}
+
+                ## Payment
+
+                **Payment Status:** Paid
+                **Flutterwave Transaction ID:** ${booking.transactionId}
+                `;
+
+  const task = await createClickUpTask({
+    listId,
+    name: booking.name,
+    description,
+  });
+
+  const fields: Array<[string, unknown]> = [
+    [emailFieldId, booking.email],
+    [phoneFieldId, booking.phone],
+    [masterclassFieldId, booking.masterclass],
+  ];
+
+  await Promise.all(
+    fields.map(([fieldId, value]) =>
+      updateClickUpCustomField({
+        taskId: task.id,
+        fieldId,
+        value,
+      }),
+    ),
+  );
+
+  return task;
 }
