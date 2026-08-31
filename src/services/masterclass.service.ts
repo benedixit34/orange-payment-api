@@ -17,18 +17,18 @@ export async function createMasterclassBookingTask(booking: Booking) {
   const listId = getRequiredEnv("CLICKUP_MASTERCLASS_LIST_ID");
   const emailFieldId = getRequiredEnv("MASTERCLASS_EMAIL_FIELD_ID");
   const phoneFieldId = getRequiredEnv("MASTERCLASS_PHONE_FIELD_ID");
-  const masterclassFieldId = getRequiredEnv("MASTERCLASS_FIELD_ID");
+  // const masterclassFieldId = getRequiredEnv("MASTERCLASS_FIELD_ID");
+  const experienceFieldId = getRequiredEnv("MASTERCLASS_EXPERIENCE_FIELD_ID")
 
 
   const description = `
                 ## Professional Information
 
                 **Profile:** ${booking.profile}
-                **Experience:** ${booking.experience}
                 **Tools:** ${booking.tools.join(", ") || "None"}
 
                 ## Masterclass
-
+                **Name:** ${booking.masterclass}
                 **Start Date:** ${booking.session}
                 **Ticket:** ${booking.ticket}
                 **Amount:** ₦${booking.amount.toLocaleString()}
@@ -52,7 +52,7 @@ export async function createMasterclassBookingTask(booking: Booking) {
   const fields: Array<[string, unknown]> = [
     [emailFieldId, booking.email],
     [phoneFieldId, booking.phone],
-    [masterclassFieldId, booking.masterclass],
+    [experienceFieldId, booking.experience],
   ];
 
   await Promise.all(

@@ -2,7 +2,7 @@ import "dotenv/config";
 
 export async function getClickUpListFields() {
     const token = process.env.CLICKUP_API_TOKEN;
-    const listId = process.env.CLICKUP_LIST_ID;
+    const listId = process.env.CLICKUP_MASTERCLASS_LIST_ID;
 
     if (!token) {
         throw new Error("CLICKUP_API_TOKEN is not configured.");
