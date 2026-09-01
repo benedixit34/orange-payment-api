@@ -1,21 +1,8 @@
 import "dotenv/config";
 
-type CreateClickUpTaskParams = {
-    name: string;
-    description?: string;
-    listId: string;
-};
+import type { CreateClickUpTaskParams, UpdateCustomFieldParams, ClickUpTaskResponse } from "../utils/clickup.js";
+import { resolveCustomFieldValue } from "../utils/clickup.js";
 
-type UpdateCustomFieldParams = {
-    taskId: string;
-    fieldId: string;
-    value: unknown;
-};
-
-type ClickUpTaskResponse = {
-    id: string;
-    name: string;
-};
 
 const CLICKUP_API_URL = "https://api.clickup.com/api/v2";
 
@@ -83,6 +70,8 @@ export async function createClickUpTask({
     return (await response.json()) as ClickUpTaskResponse;
 }
 
+
+
 export async function updateClickUpCustomField({
     taskId,
     fieldId,
@@ -96,6 +85,11 @@ export async function updateClickUpCustomField({
         throw new Error("ClickUp custom field ID is required.");
     }
 
+    const resolvedValue = await resolveCustomFieldValue(
+        fieldId,
+        value
+    );
+
     const url = `${CLICKUP_API_URL}/task/${taskId}/field/${fieldId}`;
 
     let response: Response;
@@ -105,7 +99,7 @@ export async function updateClickUpCustomField({
             method: "POST",
             headers: getHeaders(),
             body: JSON.stringify({
-                value,
+                value: resolvedValue,
             }),
         });
     } catch (error) {
@@ -122,6 +116,9 @@ export async function updateClickUpCustomField({
         console.error("ClickUp custom field API error:", {
             status: response.status,
             response: error,
+            fieldId,
+            originalValue: value,
+            resolvedValue,
         });
 
         throw new Error(

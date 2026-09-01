@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { createBooking } from "../controllers/masterclass.controller.js";
+import { createPaymentBooking, saveToClickUp } from "../controllers/masterclass.controller.js";
 
 const router = Router();
 
-router.post("/", createBooking);
+router.post("/", createPaymentBooking);
+router.post("/save", saveToClickUp);
+
 
 export default router;
