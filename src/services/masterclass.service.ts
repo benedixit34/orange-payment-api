@@ -3,8 +3,10 @@ import type { Booking } from "../types/index.js";
 import {
   createClickUpTask,
   updateClickUpCustomField,
+  updateClickUpTaskStatus,
 } from "./clickup.service.js";
 import { getClickUpListFields, ClickUpCustomField } from "../utils/clickup.js";
+
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
@@ -60,26 +62,14 @@ export async function createMasterclassBookingTask(booking: Booking) {
   const clickUpFields = await getClickUpListFields(listId);
 
   const description = `
-            ## Professional Information
-
-            **Profile:** ${booking.profile}
-            **Tools:** ${booking.tools.join(", ") || "None"}
-
-            ## Masterclass
-
-            **Name:** ${booking.masterclass}
-            **Start Date:** ${booking.session}
-            **Ticket:** ${booking.ticket}
-            **Amount:** ₦${booking.amount.toLocaleString()}
-
-            ## Learning Goal
-
-            ${booking.learningGoal || "Not provided"}
-
-            ## Payment
-
-            **Payment Status:** Paid
-            **Flutterwave Transaction ID:** ${booking.transactionId}
+            Profile: ${booking.profile}
+            Tools: ${booking.tools.join(", ") || "None"}
+            Start Date: ${booking.session}
+            Ticket: ${booking.ticket}
+            Amount: ₦${booking.amount.toLocaleString()}
+            Learning Goal: ${booking.learningGoal || "Not provided"}
+            Payment Status: Paid
+            Flutterwave Transaction ID: ${booking.transactionId}
             `;
 
   const task = await createClickUpTask({
@@ -114,4 +104,44 @@ export async function createMasterclassBookingTask(booking: Booking) {
   );
 
   return task;
+}
+
+export async function confirmMasterclassPayment(
+  clickUpTaskId: string,
+  transactionId: number,
+  amountApproved: number
+) {
+  const listId = getRequiredEnv(
+    "CLICKUP_MASTERCLASS_LIST_ID"
+  );
+
+  await updateClickUpTaskStatus(
+    clickUpTaskId,
+    "PAYMENT CONFIRMED"
+  );
+
+  const fields = await getClickUpListFields(listId);
+  const amountField = fields.find(
+    (field) =>
+      normalizeFieldName(field.name) ===
+      normalizeFieldName("Amount Approved")
+  );
+
+  if (!amountField) {
+    throw new Error(
+      'ClickUp custom field "Amount Approved" was not found.'
+    );
+  }
+  await updateClickUpCustomField({
+    taskId: clickUpTaskId,
+    fieldId: amountField.id,
+    value: amountApproved,
+  });
+
+  return {
+    success: true,
+    clickUpTaskId,
+    transactionId,
+    amountApproved,
+  };
 }

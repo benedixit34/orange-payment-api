@@ -2,7 +2,7 @@ import "dotenv/config";
 import type { Request, Response } from "express";
 
 import { verifyTransaction } from "../services/flutterwave.service.js";
-import { createMasterclassBookingTask } from "../services/masterclass.service.js";
+import { createMasterclassBookingTask, confirmMasterclassPayment } from "../services/masterclass.service.js";
 import type { Booking } from "../types/index.js";
 
 const TICKET_PRICES: Record<string, number> = {
@@ -123,119 +123,7 @@ const createBooking = (
     };
 };
 
-export async function createPaymentBooking(
-    req: Request,
-    res: Response
-) {
-    try {
-        const { transactionId } = req.body;
 
-        if (!transactionId) {
-            return res.status(400).json({
-                success: false,
-                message: "Transaction ID is required.",
-            });
-        }
-
-        const parsedTransactionId = Number(transactionId);
-
-        if (
-            !Number.isInteger(parsedTransactionId) ||
-            parsedTransactionId <= 0
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid transaction ID.",
-            });
-        }
-
-        const bookingData = getBookingData(req.body);
-
-        if (!bookingData) {
-            return res.status(400).json({
-                success: false,
-                message: "Required booking information is missing or invalid.",
-            });
-        }
-
-        const expectedAmount = validateTicket(bookingData.ticket);
-
-        if (!expectedAmount) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid ticket type.",
-            });
-        }
-
-        const payment = await verifyTransaction(parsedTransactionId);
-
-        if (payment.status !== "success" || !payment.data) {
-            return res.status(400).json({
-                success: false,
-                message: "Payment could not be verified.",
-            });
-        }
-
-        const transaction = payment.data;
-
-        if (transaction.status !== "successful") {
-            return res.status(400).json({
-                success: false,
-                message: "Payment was not successful.",
-            });
-        }
-
-        if (transaction.currency !== "NGN") {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid payment currency.",
-            });
-        }
-
-        // Enable these checks when ready.
-        //
-        // if (transaction.amount !== expectedAmount) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "Incorrect payment amount.",
-        //     });
-        // }
-        //
-        // if (
-        //     transaction.customer.email.toLowerCase() !==
-        //     bookingData.email.toLowerCase()
-        // ) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "Payment email does not match booking email.",
-        //     });
-        // }
-
-        const booking = createBooking(
-            bookingData,
-            transaction.id,
-            expectedAmount
-        );
-
-        const clickUpTask = await createMasterclassBookingTask(booking);
-
-        return res.status(201).json({
-            success: true,
-            message: "Booking created successfully.",
-            data: {
-                transactionId: transaction.id,
-                clickUpTaskId: clickUpTask.id,
-            },
-        });
-    } catch (error) {
-        console.error("Create booking error:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Unable to create booking.",
-        });
-    }
-}
 
 export async function saveToClickUp(
     req: Request,
@@ -260,19 +148,82 @@ export async function saveToClickUp(
             });
         }
 
+        
+        const rawTransactionId =
+            req.body.transactionId ??
+            req.body.transaction_id ??
+            req.body.id;
+
+        const hasTransactionId =
+            rawTransactionId !== undefined &&
+            rawTransactionId !== null &&
+            String(rawTransactionId).trim() !== "";
+
+
+        let transactionId = 0;
+        let amountApproved = expectedAmount;
+
+        if (hasTransactionId) {
+            transactionId = Number(rawTransactionId);
+
+            if (!Number.isInteger(transactionId) ||
+                transactionId <= 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Invalid Flutterwave transaction ID.",
+                });
+            }
+
+            const verification = await verifyTransaction(transactionId);
+
+            if (!verification || verification.status !== "successful") {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Payment could not be verified.",
+                });
+            }
+
+            amountApproved = Number(verification.data?.amount);
+
+            if (Number.isNaN(amountApproved) || amountApproved !== expectedAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Payment amount does not match the selected ticket.",
+                });
+            }
+        }
+        
+
         const booking = createBooking(
             bookingData,
-            0,
+            transactionId,
             expectedAmount
         );
 
         const clickUpTask = await createMasterclassBookingTask(booking);
+        if (hasTransactionId) { 
+            await confirmMasterclassPayment( clickUpTask.id, transactionId, amountApproved ); 
+        }
 
         return res.status(201).json({
             success: true,
-            message: "Booking saved successfully.",
+            message: hasTransactionId
+                ? "Payment verified and booking saved successfully."
+                : "Booking saved successfully.",
             data: {
                 clickUpTaskId: clickUpTask.id,
+                transactionId: hasTransactionId
+                    ? transactionId
+                    : null,
+                amountApproved: hasTransactionId
+                    ? amountApproved
+                    : null,
+                paymentConfirmed: hasTransactionId,
+                ticket: booking.ticket,
             },
         });
     } catch (error) {

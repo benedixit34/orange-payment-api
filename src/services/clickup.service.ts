@@ -126,3 +126,52 @@ export async function updateClickUpCustomField({
         );
     }
 }
+
+
+export async function updateClickUpTaskStatus(
+  taskId: string,
+  status: string
+): Promise<void> {
+  if (!taskId) {
+    throw new Error("ClickUp task ID is required.");
+  }
+
+  if (!status) {
+    throw new Error("ClickUp task status is required.");
+  }
+
+  const url = `${CLICKUP_API_URL}/task/${taskId}`;
+
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        status,
+      }),
+    });
+  } catch (error) {
+    console.error("ClickUp task status connection error:", error);
+
+    throw new Error(
+      "Unable to connect to ClickUp while updating task status."
+    );
+  }
+
+  if (!response.ok) {
+    const error = await response.text();
+
+    console.error("ClickUp task status API error:", {
+      status: response.status,
+      response: error,
+      taskId,
+      taskStatus: status,
+    });
+
+    throw new Error(
+      `ClickUp task status update failed: ${response.status} ${error}`
+    );
+  }
+}
