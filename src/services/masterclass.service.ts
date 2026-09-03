@@ -38,6 +38,14 @@ function getBookingValue(booking: Booking, field: ClickUpCustomField): unknown {
     return booking.experience;
   }
 
+  if (normalizedFieldName === normalizeFieldName("Primary Goal")) {
+    return booking.masterclass;
+  }
+
+  if (normalizedFieldName === normalizeFieldName("Future Masterclass")) {
+    return booking.futureInterest;
+  }
+
   for (const [key, value] of Object.entries(bookingRecord)) {
     if (normalizeFieldName(key) === normalizedFieldName) {
       return value;

@@ -23,6 +23,7 @@ type BookingRequestData = {
     ticket: string;
     learningGoal: string;
     preferredMode?: "Physical - Studio" | "Virtual - Livestream";
+    futureInterest?: string;
 };
 
 const getBookingData = (body: Request["body"]): BookingRequestData | null => {
@@ -36,8 +37,9 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
         masterclass,
         session,
         ticket,
-        learningGoal = "",
-        preferredMode = "Physical - Studio",
+        learningGoal,
+        preferredMode,
+        futureInterest,
     } = body;
 
     if (
@@ -57,18 +59,34 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
         return null;
     }
 
+    const normalizedPreferredMode =
+        typeof preferredMode === "string"
+            ? preferredMode.trim().replace(/\s+/g, " ")
+            : "Physical - Studio";
+
+    if (
+        normalizedPreferredMode !== "Physical - Studio" &&
+        normalizedPreferredMode !== "Virtual - Livestream"
+    ) {
+        return null;
+    }
+
     return {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
         profile: profile.trim(),
-        experience: experience.trim() || "Beginner",
+        experience: experience.trim() as
+            | "Beginner"
+            | "Intermediate"
+            | "Advanced",
         tools,
         masterclass: masterclass.trim(),
         session: session.trim(),
         ticket: ticket.trim(),
         learningGoal: learningGoal.trim(),
-        preferredMode: preferredMode?.trim() || "Physical - Studio",
+        preferredMode: normalizedPreferredMode,
+        futureInterest: futureInterest?.trim() || undefined,
     };
 };
 
@@ -101,6 +119,7 @@ const createBooking = (
         amount,
         learningGoal: data.learningGoal,
         preferredMode: data.preferredMode || "Physical - Studio",
+        futureInterest: data.futureInterest || undefined,
     };
 };
 

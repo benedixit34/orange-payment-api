@@ -12,4 +12,5 @@ export type Booking = {
     amount: number;
     learningGoal: string;
     preferredMode?: "Physical - Studio" | "Virtual - Livestream";
+    futureInterest?: string;
 };
