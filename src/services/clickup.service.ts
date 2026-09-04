@@ -1,8 +1,11 @@
 import "dotenv/config";
 
-import type { CreateClickUpTaskParams, UpdateCustomFieldParams, ClickUpTaskResponse } from "../utils/clickup.js";
+import type {
+    CreateClickUpTaskParams,
+    UpdateCustomFieldParams,
+    ClickUpTaskResponse,
+} from "../utils/clickup.js";
 import { resolveCustomFieldValue } from "../utils/clickup.js";
-
 
 const CLICKUP_API_URL = "https://api.clickup.com/api/v2";
 
@@ -50,7 +53,7 @@ export async function createClickUpTask({
         console.error("ClickUp connection error:", error);
 
         throw new Error(
-            "Unable to connect to ClickUp. Please try again later."
+            "Unable to connect to ClickUp. Please try again later.",
         );
     }
 
@@ -63,19 +66,18 @@ export async function createClickUpTask({
         });
 
         throw new Error(
-            `ClickUp task creation failed: ${response.status} ${error}`
+            `ClickUp task creation failed: ${response.status} ${error}`,
         );
     }
 
     return (await response.json()) as ClickUpTaskResponse;
 }
 
-
-
 export async function updateClickUpCustomField({
     taskId,
     fieldId,
     value,
+    fields,
 }: UpdateCustomFieldParams): Promise<void> {
     if (!taskId) {
         throw new Error("ClickUp task ID is required.");
@@ -85,9 +87,14 @@ export async function updateClickUpCustomField({
         throw new Error("ClickUp custom field ID is required.");
     }
 
-    const resolvedValue = await resolveCustomFieldValue(
+    if (!fields) {
+        throw new Error("ClickUp custom fields are required.");
+    }
+
+    const resolvedValue = resolveCustomFieldValue(
+        fields,
         fieldId,
-        value
+        value,
     );
 
     const url = `${CLICKUP_API_URL}/task/${taskId}/field/${fieldId}`;
@@ -103,10 +110,13 @@ export async function updateClickUpCustomField({
             }),
         });
     } catch (error) {
-        console.error("ClickUp custom field connection error:", error);
+        console.error(
+            "ClickUp custom field connection error:",
+            error,
+        );
 
         throw new Error(
-            "Unable to connect to ClickUp while updating the custom field."
+            "Unable to connect to ClickUp while updating the custom field.",
         );
     }
 
@@ -122,56 +132,58 @@ export async function updateClickUpCustomField({
         });
 
         throw new Error(
-            `ClickUp custom field update failed: ${response.status} ${error}`
+            `ClickUp custom field update failed: ${response.status} ${error}`,
         );
     }
 }
 
-
 export async function updateClickUpTaskStatus(
-  taskId: string,
-  status: string
+    taskId: string,
+    status: string,
 ): Promise<void> {
-  if (!taskId) {
-    throw new Error("ClickUp task ID is required.");
-  }
+    if (!taskId) {
+        throw new Error("ClickUp task ID is required.");
+    }
 
-  if (!status) {
-    throw new Error("ClickUp task status is required.");
-  }
+    if (!status) {
+        throw new Error("ClickUp task status is required.");
+    }
 
-  const url = `${CLICKUP_API_URL}/task/${taskId}`;
+    const url = `${CLICKUP_API_URL}/task/${taskId}`;
 
-  let response: Response;
+    let response: Response;
 
-  try {
-    response = await fetch(url, {
-      method: "PUT",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        status,
-      }),
-    });
-  } catch (error) {
-    console.error("ClickUp task status connection error:", error);
+    try {
+        response = await fetch(url, {
+            method: "PUT",
+            headers: getHeaders(),
+            body: JSON.stringify({
+                status,
+            }),
+        });
+    } catch (error) {
+        console.error(
+            "ClickUp task status connection error:",
+            error,
+        );
 
-    throw new Error(
-      "Unable to connect to ClickUp while updating task status."
-    );
-  }
+        throw new Error(
+            "Unable to connect to ClickUp while updating task status.",
+        );
+    }
 
-  if (!response.ok) {
-    const error = await response.text();
+    if (!response.ok) {
+        const error = await response.text();
 
-    console.error("ClickUp task status API error:", {
-      status: response.status,
-      response: error,
-      taskId,
-      taskStatus: status,
-    });
+        console.error("ClickUp task status API error:", {
+            status: response.status,
+            response: error,
+            taskId,
+            taskStatus: status,
+        });
 
-    throw new Error(
-      `ClickUp task status update failed: ${response.status} ${error}`
-    );
-  }
+        throw new Error(
+            `ClickUp task status update failed: ${response.status} ${error}`,
+        );
+    }
 }

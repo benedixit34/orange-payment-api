@@ -1,15 +1,10 @@
 import "dotenv/config";
 
-export type CreateClickUpTaskParams = {
-  name: string;
-  description?: string;
-  listId: string;
-};
-
 export type UpdateCustomFieldParams = {
   taskId: string;
   fieldId: string;
   value: unknown;
+  fields: ClickUpCustomField[];
 };
 
 export type ClickUpTaskResponse = {
@@ -30,6 +25,12 @@ export type ClickUpCustomField = {
   type_config?: {
     options?: ClickUpCustomFieldOption[];
   };
+};
+
+export type CreateClickUpTaskParams = {
+  listId: string;
+  name: string;
+  description?: string;
 };
 
 type ClickUpFieldsResponse = {
@@ -93,34 +94,36 @@ export async function getClickUpListFields(
     );
   }
 
-  const data = (await response.json()) as ClickUpFieldsResponse;
+  const data =
+    (await response.json()) as ClickUpFieldsResponse;
 
   return data.fields;
 }
 
-export async function resolveCustomFieldValue(
+export function resolveCustomFieldValue(
+  fields: ClickUpCustomField[],
   fieldId: string,
   value: unknown,
-): Promise<unknown> {
-  const listId = process.env.CLICKUP_MASTERCLASS_LIST_ID;
-
-  if (!listId) {
-    throw new Error("CLICKUP_MASTERCLASS_LIST_ID is not configured.");
-  }
-
-  const fields = await getClickUpListFields(listId);
-
-  const field = fields.find((item) => item.id === fieldId);
+): unknown {
+  const field = fields.find(
+    (item) => item.id === fieldId,
+  );
 
   if (!field) {
-    throw new Error(`ClickUp custom field "${fieldId}" could not be found.`);
+    throw new Error(
+      `ClickUp custom field "${fieldId}" could not be found.`,
+    );
   }
 
-  if (field.type !== "drop_down" && field.type !== "labels") {
+  if (
+    field.type !== "drop_down" &&
+    field.type !== "labels"
+  ) {
     return value;
   }
 
-  const options = field.type_config?.options ?? [];
+  const options =
+    field.type_config?.options ?? [];
 
   if (!options.length) {
     throw new Error(
@@ -128,16 +131,27 @@ export async function resolveCustomFieldValue(
     );
   }
 
-  const stringValue = String(value).trim().toLowerCase();
+  const normalizeValue = (input: unknown): string =>
+    String(input)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+  const normalizedValue =
+    normalizeValue(value);
 
   const option = options.find(
-    (item) => item.name.trim().toLowerCase() === stringValue,
+    (item) =>
+      normalizeValue(item.name) ===
+      normalizedValue,
   );
 
   if (!option) {
     throw new Error(
       `Invalid option "${value}" for ClickUp field "${field.name}". ` +
-        `Available options: ${options.map((item) => item.name).join(", ")}`,
+        `Available options: ${options
+          .map((item) => item.name)
+          .join(", ")}`,
     );
   }
 
@@ -145,9 +159,5 @@ export async function resolveCustomFieldValue(
     return option.id;
   }
 
-  if (field.type === "labels") {
-    return [option.id];
-  }
-
-  return value;
+  return [option.id];
 }

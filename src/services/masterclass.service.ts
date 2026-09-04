@@ -7,12 +7,13 @@ import {
 } from "./clickup.service.js";
 import { getClickUpListFields, ClickUpCustomField } from "../utils/clickup.js";
 
-
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
+
   if (!value) {
     throw new Error(`${name} is not configured.`);
   }
+
   return value;
 }
 
@@ -27,8 +28,10 @@ function getBookingValue(booking: Booking, field: ClickUpCustomField): unknown {
   switch (field.type) {
     case "email":
       return booking.email;
+
     case "phone":
       return booking.phone;
+
     default:
       break;
   }
@@ -59,18 +62,17 @@ function getBookingValue(booking: Booking, field: ClickUpCustomField): unknown {
 
 export async function createMasterclassBookingTask(booking: Booking) {
   const listId = getRequiredEnv("CLICKUP_MASTERCLASS_LIST_ID");
+
   const clickUpFields = await getClickUpListFields(listId);
 
   const description = `
-            Profile: ${booking.profile}
-            Tools: ${booking.tools.join(", ") || "None"}
-            Start Date: ${booking.session}
-            Ticket: ${booking.ticket}
-            Amount: ₦${booking.amount.toLocaleString()}
-            Learning Goal: ${booking.learningGoal || "Not provided"}
-            Payment Status: Paid
-            Flutterwave Transaction ID: ${booking.transactionId}
-            `;
+Profile: ${booking.profile}
+Tools: ${booking.tools.join(", ") || "None"}
+Start Date: ${booking.session}
+Ticket: ${booking.ticket}
+Amount: ₦${booking.amount.toLocaleString()}
+Learning Goal: ${booking.learningGoal || "Not provided"}
+  `.trim();
 
   const task = await createClickUpTask({
     listId,
@@ -87,6 +89,7 @@ export async function createMasterclassBookingTask(booking: Booking) {
       console.warn(
         `No corresponding booking value found for ClickUp field "${field.name}".`,
       );
+
       continue;
     }
 
@@ -99,6 +102,7 @@ export async function createMasterclassBookingTask(booking: Booking) {
         taskId: task.id,
         fieldId,
         value,
+        fields: clickUpFields,
       }),
     ),
   );
@@ -109,33 +113,28 @@ export async function createMasterclassBookingTask(booking: Booking) {
 export async function confirmMasterclassPayment(
   clickUpTaskId: string,
   transactionId: number,
-  amountApproved: number
+  amountApproved: number,
 ) {
-  const listId = getRequiredEnv(
-    "CLICKUP_MASTERCLASS_LIST_ID"
-  );
+  const listId = getRequiredEnv("CLICKUP_MASTERCLASS_LIST_ID");
 
-  await updateClickUpTaskStatus(
-    clickUpTaskId,
-    "PAYMENT CONFIRMED"
-  );
+  await updateClickUpTaskStatus(clickUpTaskId, "PAYMENT CONFIRMED");
 
   const fields = await getClickUpListFields(listId);
+
   const amountField = fields.find(
     (field) =>
-      normalizeFieldName(field.name) ===
-      normalizeFieldName("Amount Approved")
+      normalizeFieldName(field.name) === normalizeFieldName("Amount Approved"),
   );
 
   if (!amountField) {
-    throw new Error(
-      'ClickUp custom field "Amount Approved" was not found.'
-    );
+    throw new Error('ClickUp custom field "Amount Approved" was not found.');
   }
+
   await updateClickUpCustomField({
     taskId: clickUpTaskId,
     fieldId: amountField.id,
     value: amountApproved,
+    fields,
   });
 
   return {
