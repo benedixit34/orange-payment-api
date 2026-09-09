@@ -28,7 +28,7 @@ type BookingRequestData = {
   tools: string[];
   masterclass: string;
   session: string;
-  ticket: string;
+  ticket?: string;
   learningGoal: string;
   preferredMode?: "Physical - Studio" | "Virtual - Livestream";
   futureInterest?: string;
@@ -57,8 +57,7 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     !profile ||
     !experience ||
     !masterclass ||
-    !session ||
-    !ticket
+    !session
   ) {
     return null;
   }
@@ -88,7 +87,6 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     tools,
     masterclass: masterclass.trim(),
     session: session.trim(),
-    ticket: ticket.trim(),
     learningGoal: learningGoal.trim(),
     preferredMode: normalizedPreferredMode,
     futureInterest: futureInterest?.trim() || undefined,
@@ -108,7 +106,6 @@ const validateTicket = (ticket: string) => {
 const createBooking = (
   data: BookingRequestData,
   transactionId: number,
-  amount: number,
 ): Booking => {
   return {
     transactionId,
@@ -120,8 +117,7 @@ const createBooking = (
     tools: data.tools,
     masterclass: data.masterclass,
     session: data.session,
-    ticket: data.ticket,
-    amount,
+   
     learningGoal: data.learningGoal,
     preferredMode: data.preferredMode || "Physical - Studio",
     futureInterest: data.futureInterest || undefined,
@@ -139,18 +135,10 @@ export async function saveToClickUp(req: Request, res: Response) {
       });
     }
 
-    const expectedAmount = validateTicket(bookingData.ticket);
-
-    if (!expectedAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid ticket type.",
-      });
-    }
-
+  
     let transactionId = 0;
 
-    const booking = createBooking(bookingData, transactionId, expectedAmount);
+    const booking = createBooking(bookingData, transactionId);
 
     const clickUpTask = await createMasterclassBookingTask(booking);
 
@@ -163,8 +151,6 @@ export async function saveToClickUp(req: Request, res: Response) {
       booking.tools,
       booking.masterclass,
       booking.session,
-      booking.ticket,
-      expectedAmount,
       booking.learningGoal,
       clickUpTask.id,
       booking.preferredMode,

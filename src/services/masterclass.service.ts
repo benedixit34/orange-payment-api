@@ -66,12 +66,10 @@ export async function createMasterclassBookingTask(booking: Booking) {
   const clickUpFields = await getClickUpListFields(listId);
 
   const description = `
-Profile: ${booking.profile}
-Tools: ${booking.tools.join(", ") || "None"}
-Start Date: ${booking.session}
-Ticket: ${booking.ticket}
-Amount: ₦${booking.amount.toLocaleString()}
-Learning Goal: ${booking.learningGoal || "Not provided"}
+  Profile: ${booking.profile}
+  Tools: ${booking.tools.join(", ") || "None"}
+  Start Date: ${booking.session}
+  Learning Goal: ${booking.learningGoal || "Not provided"}
   `.trim();
 
   const task = await createClickUpTask({

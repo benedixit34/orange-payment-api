@@ -8,8 +8,8 @@ export type Booking = {
     tools: string[];
     masterclass: string;
     session: string;
-    ticket: string;
-    amount: number;
+    ticket?: string;
+    amount?: number;
     learningGoal: string;
     preferredMode?: "Physical - Studio" | "Virtual - Livestream";
     futureInterest?: string;
