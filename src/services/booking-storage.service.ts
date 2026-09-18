@@ -25,8 +25,10 @@ export async function savePendingBooking(
     session: string,
     learningGoal: string,
     clickUpTaskId: string,
+    referralCode?: string,
     preferredMode?: "Physical - Studio" | "Virtual - Livestream",
     futureInterest?: string | undefined,
+   
     
 ): Promise<string> {
     const reference = `MC-${crypto.randomUUID()}`;
@@ -43,6 +45,7 @@ export async function savePendingBooking(
         session,
         learningGoal,
         preferredMode,
+        referralCode,
         futureInterest,
         clickUpTaskId,
     };

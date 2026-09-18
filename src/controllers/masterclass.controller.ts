@@ -30,8 +30,10 @@ type BookingRequestData = {
   session: string;
   ticket?: string;
   learningGoal: string;
+  referralCode?: string;
   preferredMode?: "Physical - Studio" | "Virtual - Livestream";
   futureInterest?: string;
+  
 };
 
 const getBookingData = (body: Request["body"]): BookingRequestData | null => {
@@ -44,10 +46,11 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     tools = [],
     masterclass,
     session,
-    ticket,
     learningGoal,
+    referralCode,
     preferredMode,
     futureInterest,
+    
   } = body;
 
   if (
@@ -57,7 +60,8 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     !profile ||
     !experience ||
     !masterclass ||
-    !session
+    !session ||
+    !referralCode
   ) {
     return null;
   }
@@ -88,20 +92,14 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     masterclass: masterclass.trim(),
     session: session.trim(),
     learningGoal: learningGoal.trim(),
+    referralCode: referralCode.trim(),
     preferredMode: normalizedPreferredMode,
     futureInterest: futureInterest?.trim() || undefined,
+  
   };
 };
 
-const validateTicket = (ticket: string) => {
-  const amount = TICKET_PRICES[ticket];
 
-  if (!amount) {
-    return null;
-  }
-
-  return amount;
-};
 
 const createBooking = (
   data: BookingRequestData,
@@ -117,10 +115,11 @@ const createBooking = (
     tools: data.tools,
     masterclass: data.masterclass,
     session: data.session,
-   
     learningGoal: data.learningGoal,
+    referralCode: data.referralCode,
     preferredMode: data.preferredMode || "Physical - Studio",
     futureInterest: data.futureInterest || undefined,
+  
   };
 };
 
@@ -153,6 +152,7 @@ export async function saveToClickUp(req: Request, res: Response) {
       booking.session,
       booking.learningGoal,
       clickUpTask.id,
+      booking.referralCode,
       booking.preferredMode,
       booking.futureInterest,
     );

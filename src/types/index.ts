@@ -13,4 +13,5 @@ export type Booking = {
     learningGoal: string;
     preferredMode?: "Physical - Studio" | "Virtual - Livestream";
     futureInterest?: string;
+    referralCode?: string;
 };

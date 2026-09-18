@@ -51,6 +51,11 @@ function getBookingValue(booking: Booking, field: ClickUpCustomField): unknown {
     return booking.futureInterest;
   }
 
+  if (normalizedFieldName === normalizeFieldName("Referral Code")) {
+    return booking.referralCode;
+  }
+
+
   for (const [key, value] of Object.entries(bookingRecord)) {
     if (normalizeFieldName(key) === normalizedFieldName) {
       return value;
