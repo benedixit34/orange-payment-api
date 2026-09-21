@@ -3,10 +3,11 @@ import cors from "cors";
 import masterclassRoutes from "./routes/masterclass.routes.js";
 import { pinoHttp } from "pino-http";
 import logger from "./utils/logger.js";
+import { getCountryFromIp } from "./services/getCountryFromIp.js";
 
-const httpLogger = pinoHttp({
-    logger,
-});
+// const httpLogger = pinoHttp({
+//     logger,
+// });
 
 const app = express();
 
@@ -19,7 +20,7 @@ app.use(
 app.use(express.json());
 
 
-app.use(httpLogger)
+// app.use(httpLogger)
 
 app.get("/api/health", (_req, res) => {
     res.json({
@@ -28,6 +29,14 @@ app.get("/api/health", (_req, res) => {
     });
 });
 
+
+app.set("trust proxy", true);
+app.get("/location", async (req, res) => {
+  const country = await getCountryFromIp(req);
+  res.json({
+    country,
+  });
+});
 app.use("/api/bookings", masterclassRoutes);
 
 export default app;

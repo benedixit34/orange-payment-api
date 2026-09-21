@@ -13,11 +13,8 @@ import {
   deletePendingBooking,
 } from "../services/booking-storage.service.js";
 
-const TICKET_PRICES: Record<string, number> = {
-  "early-bird": 180000,
-  standard: 200000,
-  vip: 300000,
-};
+
+import type { Currency } from "../config/ticketConfig.js";
 
 type BookingRequestData = {
   name: string;
@@ -28,15 +25,15 @@ type BookingRequestData = {
   tools: string[];
   masterclass: string;
   session: string;
-  ticket?: string;
   learningGoal: string;
   referralCode?: string;
   preferredMode?: "Physical - Studio" | "Virtual - Livestream";
   futureInterest?: string;
-  
 };
 
-const getBookingData = (body: Request["body"]): BookingRequestData | null => {
+const getBookingData = (
+  body: Request["body"],
+): BookingRequestData | null => {
   const {
     name,
     email,
@@ -50,7 +47,6 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     referralCode,
     preferredMode,
     futureInterest,
-    
   } = body;
 
   if (
@@ -59,9 +55,7 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     !phone ||
     !profile ||
     !experience ||
-    !masterclass ||
-    !session ||
-    !referralCode
+    !masterclass
   ) {
     return null;
   }
@@ -87,19 +81,19 @@ const getBookingData = (body: Request["body"]): BookingRequestData | null => {
     email: email.trim(),
     phone: phone.trim(),
     profile: profile.trim(),
-    experience: experience.trim() as "Beginner" | "Intermediate" | "Advanced",
+    experience: experience.trim() as
+      | "Beginner"
+      | "Intermediate"
+      | "Advanced",
     tools,
     masterclass: masterclass.trim(),
     session: session.trim(),
-    learningGoal: learningGoal.trim(),
-    referralCode: referralCode.trim(),
+    learningGoal: learningGoal.trim() || undefined,
+    referralCode: referralCode.trim() || undefined,
     preferredMode: normalizedPreferredMode,
     futureInterest: futureInterest?.trim() || undefined,
-  
   };
 };
-
-
 
 const createBooking = (
   data: BookingRequestData,
@@ -111,7 +105,7 @@ const createBooking = (
     email: data.email,
     phone: data.phone,
     profile: data.profile,
-    experience: data.experience || "Beginner",
+    experience: data.experience,
     tools: data.tools,
     masterclass: data.masterclass,
     session: data.session,
@@ -119,13 +113,16 @@ const createBooking = (
     referralCode: data.referralCode,
     preferredMode: data.preferredMode || "Physical - Studio",
     futureInterest: data.futureInterest || undefined,
-  
   };
 };
 
-export async function saveToClickUp(req: Request, res: Response) {
+export async function saveToClickUp(
+  req: Request,
+  res: Response,
+) {
   try {
     const bookingData = getBookingData(req.body);
+    const phoneCountryCode = req.body.countryCode;
 
     if (!bookingData) {
       return res.status(400).json({
@@ -134,12 +131,26 @@ export async function saveToClickUp(req: Request, res: Response) {
       });
     }
 
-  
-    let transactionId = 0;
+    // const country = await Promise.race([
+    //   getCountryFromIp(req),
+    //   new Promise<string | null>((resolve) =>
+    //     setTimeout(() => resolve(null), 2000),
+    //   ),
+    // ]);
 
-    const booking = createBooking(bookingData, transactionId);
+    // const country_code =  phoneCountryCode === "+234"
+    //     ? "NG"
+    //     : country;
 
-    const clickUpTask = await createMasterclassBookingTask(booking);
+    const currency: Currency =
+      phoneCountryCode === "+234" || !phoneCountryCode
+        ? "NGN"
+        : "USD";
+
+    const booking = createBooking(bookingData, 0);
+
+    const clickUpTask =
+      await createMasterclassBookingTask(booking);
 
     const reference = await savePendingBooking(
       booking.name,
@@ -155,6 +166,7 @@ export async function saveToClickUp(req: Request, res: Response) {
       booking.referralCode,
       booking.preferredMode,
       booking.futureInterest,
+      currency,
     );
 
     return res.status(201).json({
@@ -164,9 +176,8 @@ export async function saveToClickUp(req: Request, res: Response) {
         clickUpTaskId: clickUpTask.id,
         reference,
         transactionId: null,
-        amountApproved: null,
         paymentConfirmed: false,
-        ticket: booking.ticket,
+        currency,
       },
     });
   } catch (error) {
@@ -179,7 +190,10 @@ export async function saveToClickUp(req: Request, res: Response) {
   }
 }
 
-export async function getPendingBookingData(req: Request, res: Response) {
+export async function getPendingBookingData(
+  req: Request,
+  res: Response,
+) {
   try {
     const reference = String(req.params.reference);
 
@@ -223,7 +237,8 @@ export async function confirmMasterclassPaymentController(
     if (!transactionId || !reference) {
       return res.status(400).json({
         success: false,
-        message: "Transaction ID and booking reference are required.",
+        message:
+          "Transaction ID and booking reference are required.",
       });
     }
 
@@ -236,7 +251,8 @@ export async function confirmMasterclassPaymentController(
       });
     }
 
-    const verification = await verifyTransaction(transactionId);
+    const verification =
+      await verifyTransaction(transactionId);
 
     if (!verification) {
       return res.status(400).json({
@@ -252,17 +268,56 @@ export async function confirmMasterclassPaymentController(
       });
     }
 
-    const amountApproved = Number(verification.data?.amount);
-
-    if (Number.isNaN(amountApproved) || amountApproved !== booking.amount) {
+    if (
+      Number(verification.data?.id) !== Number(transactionId)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Payment amount does not match the booking.",
+        message: "Transaction ID does not match.",
+      });
+    }
+
+    if (
+      booking.transactionReference &&
+      verification.data?.tx_ref !==
+        booking.transactionReference
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Transaction reference does not match.",
+      });
+    }
+
+    const amountApproved = Number(
+      verification.data?.amount,
+    );
+
+    if (
+      Number.isNaN(amountApproved) ||
+      amountApproved !== Number(booking.amount)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Payment amount does not match the booking.",
+      });
+    }
+
+    const currencyApproved =
+      verification.data?.currency;
+
+    if (
+      currencyApproved !== booking.currency
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Payment currency does not match the booking.",
       });
     }
 
     await confirmMasterclassPayment(
-      booking.clickUpTaskId!,
+      booking.clickUpTaskId,
       Number(transactionId),
       amountApproved,
     );
@@ -276,6 +331,7 @@ export async function confirmMasterclassPaymentController(
         reference,
         transactionId: Number(transactionId),
         amountApproved,
+        currency: currencyApproved,
         paymentConfirmed: true,
       },
     });

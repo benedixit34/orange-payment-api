@@ -7,68 +7,76 @@ const redis = Redis.fromEnv();
 const BOOKING_TTL = 7 * 24 * 60 * 60;
 
 type PendingBooking = Booking & {
-    reference: string;
-    clickUpTaskId: string;
+  reference: string;
+  clickUpTaskId: string;
+  currency: "NGN" | "USD";
+  ticket?: "early-bird" | "standard" | "vip";
+  amount?: number;
+  transactionReference?: string;
 };
 
 const getBookingKey = (reference: string) =>
-    `masterclass:booking:${reference}`;
+  `masterclass:booking:${reference}`;
 
 export async function savePendingBooking(
-    name: string,
-    email: string,
-    phone: string,
-    profile: string,
-    experience: "Beginner" | "Intermediate" | "Advanced",
-    tools: string[],
-    masterclass: string,
-    session: string,
-    learningGoal: string,
-    clickUpTaskId: string,
-    referralCode?: string,
-    preferredMode?: "Physical - Studio" | "Virtual - Livestream",
-    futureInterest?: string | undefined,
-   
-    
+  name: string,
+  email: string,
+  phone: string,
+  profile: string,
+  experience: "Beginner" | "Intermediate" | "Advanced",
+  tools: string[],
+  masterclass: string,
+  session: string,
+  learningGoal: string,
+  clickUpTaskId: string,
+  referralCode?: string,
+  preferredMode?: "Physical - Studio" | "Virtual - Livestream",
+  futureInterest?: string,
+  currency?: "NGN" | "USD",
 ): Promise<string> {
-    const reference = `MC-${crypto.randomUUID()}`;
+  const reference = `MC-${crypto.randomUUID()}`;
 
-    const pendingBooking: PendingBooking = {
-        reference,
-        name,
-        email,
-        phone,
-        profile,
-        experience,
-        tools,
-        masterclass,
-        session,
-        learningGoal,
-        preferredMode,
-        referralCode,
-        futureInterest,
-        clickUpTaskId,
-    };
+  if (!currency) {
+    throw new Error("Currency is required.");
+  }
 
-    await redis.set(
-        getBookingKey(reference),
-        pendingBooking,
-        { ex: BOOKING_TTL }
-    );
+  const pendingBooking: PendingBooking = {
+    reference,
+    name,
+    email,
+    phone,
+    profile,
+    experience,
+    tools,
+    masterclass,
+    session,
+    learningGoal,
+    preferredMode,
+    referralCode,
+    futureInterest,
+    clickUpTaskId,
+    currency,
+  };
 
-    return reference;
+  await redis.set(
+    getBookingKey(reference),
+    pendingBooking,
+    { ex: BOOKING_TTL },
+  );
+
+  return reference;
 }
 
 export async function getPendingBooking(
-    reference: string
+  reference: string,
 ): Promise<PendingBooking | null> {
-    return await redis.get<PendingBooking>(
-        getBookingKey(reference)
-    );
+  return await redis.get<PendingBooking>(
+    getBookingKey(reference),
+  );
 }
 
 export async function deletePendingBooking(
-    reference: string
+  reference: string,
 ): Promise<void> {
-    await redis.del(getBookingKey(reference));
+  await redis.del(getBookingKey(reference));
 }
