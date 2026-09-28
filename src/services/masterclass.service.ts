@@ -29,9 +29,6 @@ function getBookingValue(booking: Booking, field: ClickUpCustomField): unknown {
     case "email":
       return booking.email;
 
-    case "phone":
-      return booking.phone;
-
     default:
       break;
   }
@@ -54,6 +51,11 @@ function getBookingValue(booking: Booking, field: ClickUpCustomField): unknown {
   if (normalizedFieldName === normalizeFieldName("Referral Code")) {
     return booking.referralCode;
   }
+
+  if (normalizedFieldName === normalizeFieldName("Phone")) {
+    return booking.phone;
+  }
+
 
 
   for (const [key, value] of Object.entries(bookingRecord)) {
